@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <h1>Engage Chat</h1>
+    <div id="messages"></div>
+    <form id="message-form">
+        {% csrf_token %}
+        <input type="text" name="message">
+        <button type="submit">Send</button>
+    </form>
+{% endblock %}
+
+{% block scripts %}
+    <script>
+        var messageForm = document.querySelector('#message-form');
+        messageForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            var messageInput = document.querySelector('input[name="message"]');
+            var message = messageInput.value;
+            messageInput.value = '';
+            fetch('/send-message/', {
+                method: 'POST',
+                body: new FormData(messageForm)
+            }).then(function(response) {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Error sending message.');
+                }
+            }).then(function(data) {
+                if (data.success) {
+                    // Message sent successfully.
+                } else {
+                    throw new Error('Error sending message.');
+                }
+            }).catch(function(error) {
+                console.error(error);
+            });
+        });
+
+        setInterval(function() {
+            fetch('/get-messages/').then(function(response) {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Error getting messages.');
+                }
+            }).then(function(data) {
+                var messagesDiv = document.querySelector('#messages');
+                messagesDiv.innerHTML = '';
+                data.messages.forEach(function(message) {
+                    var messageDiv = document.createElement('div');
+                    messageDiv.innerText = message.sender + ': ' + message.message;
+                    messagesDiv.appendChild(messageDiv);
+                });
+            }).catch(function(error) {
+                console.error(error);
+            });
+        }, 1000);
+    </script>
+{% endblock %}
