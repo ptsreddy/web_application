@@ -1,0 +1,66 @@
+# Deployment for App
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-app # Name of the deployment
+spec:
+  replicas: 3 # Number of replicas
+  selector: # Labels for pods
+    matchLabels: 
+      app: my-app 
+  template: # Details about containers and resources
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers: # Container details
+      - name: my-container  
+        image: my-image:latest # Image name 
+        ports:
+        - containerPort: 80  # Port which will be exposed
+        env: # Environment variables 
+        - name: ENVIRONMENT
+          value: "Dev"
+        # Resource limits and requests
+        resources:
+          limits:
+            cpu: "2" # Maximum core usage allowed
+            memory: "1Gi" # Maximum memory usage allowed 
+          requests:
+            cpu: "1" # Requested core usage 
+            memory: "512Mi" # Requested memory usage
+        # Liveness and readiness probes
+        livenessProbe: 
+          httpGet:
+            path: /healthz # Health check URL
+            port: 80 
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /readiness
+            port: 80
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        # Secret and ConfigMap usage
+        volumeMounts:
+        - name: my-app-config # Mount config map
+          mountPath: /config
+        - name: my-app-secret # Mount secret
+          mountPath: /secrets
+      volumes:
+      - name: my-app-config # Name for config map
+        configMap:
+          name: my-app-config # Get config map details
+          items:
+          - key: my-app-config.yaml # Key for specific config map
+            path: my-app-config.yaml
+      - name: my-app-secret # Name for secret
+        secret:
+          secretName: my-app-secret # Retrieve secret details
+  # Horizontal Pod Autoscaler
+  autoscaling:
+    enabled: true # Enable auto scalability
+    minReplicas: 2 # Minimum replicas
+    maxReplicas: 10 # Maximum replicas
+    targetCPUUtilizationPercentage: 80 # Target utilization of CPU
